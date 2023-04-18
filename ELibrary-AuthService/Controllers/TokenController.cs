@@ -23,13 +23,17 @@ public class TokenController : Controller
         _config = config;
     }
 
+    public record LoginCredentials(string Username, string Password, string Grant_type);
+
     [Route("/token")]
     [HttpPost]
-    public async Task<IActionResult> Create(string username, string password, string grant_type)
+    [ProducesResponseType(typeof(string), 200)]
+    [ProducesResponseType(400)]
+    public async Task<IActionResult> Create([FromBody] LoginCredentials credentials)
     {
-        if (await IsValidUsernameAndPassword(username, password))
+        if (await IsValidUsernameAndPassword(credentials.Username, credentials.Password))
         {
-            return new ObjectResult(await GenerateToken(username));
+            return new ObjectResult(await GenerateToken(credentials.Username));
         }
         else
         {
