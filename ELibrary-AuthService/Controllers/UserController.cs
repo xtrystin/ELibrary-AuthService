@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace ELibrary_AuthService.Controllers
 {
@@ -37,37 +38,50 @@ namespace ELibrary_AuthService.Controllers
 
         [HttpPost]
         [Route("Register")]
+        [ProducesResponseType(400, Type = typeof(IdentityError))]
+        [ProducesResponseType(200)]
         [AllowAnonymous]
         public async Task<IActionResult> Register(UserRegistrationModel user)
         {
             if (ModelState.IsValid)
             {
                 var existingUser = await _userManager.FindByEmailAsync(user.EmailAddress);
-                if (existingUser is null)
+                if (existingUser is not null)
+                    return BadRequest("Account with this email already exist");
+                
+
+                IdentityUser newUser = new()
                 {
-                    IdentityUser newUser = new()
+                    Email = user.EmailAddress,
+                    EmailConfirmed = true,       // email confirmation is not implemented
+                    UserName = user.EmailAddress
+                };
+
+                IdentityResult result = await _userManager.CreateAsync(newUser, user.Password);
+                if (result.Succeeded)
+                {
+                    existingUser = await _userManager.FindByEmailAsync(user.EmailAddress);
+
+                    if (existingUser is null)
                     {
-                        Email = user.EmailAddress,
-                        EmailConfirmed = true,       // email confirmation is not implemented
-                        UserName = user.EmailAddress
-                    };
-
-                    IdentityResult result = await _userManager.CreateAsync(newUser, user.Password);
-                    if (result.Succeeded)
-                    {
-                        existingUser = await _userManager.FindByEmailAsync(user.EmailAddress);
-
-                        if (existingUser is null)
-                        {
-                            return BadRequest();
-                        }
-
-                        UserCreatedModel userDto = new UserCreatedModel(new Guid(existingUser.Id), 
-                            user.FirstName,user.LastName, user.EmailAddress);
-                        //send userDto to the bus
-
-                        return Ok();
+                        return BadRequest();
                     }
+
+                    UserCreatedModel userDto = new UserCreatedModel(new Guid(existingUser.Id), 
+                        user.FirstName,user.LastName, user.EmailAddress);
+                    //send userDto to the bus
+
+                    return Ok();
+                }
+                else
+                {
+                    StringBuilder message = new("");
+                    foreach (var error in result.Errors)
+                    {
+                        message.Append(error.Description + "\n");
+                    }
+
+                    return BadRequest(message.ToString());
                 }
             }
 
