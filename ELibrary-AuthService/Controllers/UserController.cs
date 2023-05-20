@@ -1,7 +1,9 @@
 ﻿using ELibrary_AuthService.Data;
+using MassTransit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using RabbitMqMessages;
 using System.Text;
 
 namespace ELibrary_AuthService.Controllers
@@ -13,15 +15,19 @@ namespace ELibrary_AuthService.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ILogger<UserController> _logger;
+        private readonly IBus _bus;
 
         public UserController(ApplicationDbContext context,
-            UserManager<IdentityUser> userManager,
-            ILogger<UserController> logger)
+            UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager,
+            ILogger<UserController> logger, IBus bus)
         {
             _context = context;
             _userManager = userManager;
+            _roleManager = roleManager;
             _logger = logger;
+            _bus = bus;
         }
 
         public record UserRegistrationModel(
@@ -29,12 +35,6 @@ namespace ELibrary_AuthService.Controllers
             string LastName,
             string EmailAddress,
             string Password);
-
-        public record UserCreatedModel(
-            Guid Id,
-            string FirstName,
-            string LastName,
-            string EmailAddress);
 
         [HttpPost]
         [Route("Register")]
@@ -57,20 +57,18 @@ namespace ELibrary_AuthService.Controllers
                     UserName = user.EmailAddress
                 };
 
+
                 IdentityResult result = await _userManager.CreateAsync(newUser, user.Password);
                 if (result.Succeeded)
                 {
                     existingUser = await _userManager.FindByEmailAsync(user.EmailAddress);
-
                     if (existingUser is null)
-                    {
                         return BadRequest();
-                    }
 
-                    UserCreatedModel userDto = new UserCreatedModel(new Guid(existingUser.Id), 
-                        user.FirstName,user.LastName, user.EmailAddress);
-                    //send userDto to the bus
-
+                    var message = new UserCreated() { UserId = new Guid(existingUser.Id),
+                        FirstName = user.FirstName, LastName = user.LastName };
+                    
+                    //await _bus.Publish(message);    // todo: uncomment when rabbit is ready
                     return Ok();
                 }
                 else
@@ -139,13 +137,40 @@ namespace ELibrary_AuthService.Controllers
                 }
                 catch (Exception ex)
                 {
-
                     throw;
                 }
                 return new ObjectResult(isInRole);
             }
 
             return BadRequest();
+        }
+
+        [HttpPost]
+        [Route("{userId}/AddToRole")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> AddToRole([FromRoute] string userId, [FromQuery] string roleName)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user is null) 
+                return NotFound();
+
+            try
+            {
+                var isInRole = await _userManager.IsInRoleAsync(user, roleName);
+                if (isInRole)
+                    return BadRequest("User is already in this role");
+
+                if (await _roleManager.RoleExistsAsync(roleName) is false)
+                    return BadRequest("This role does not exist");
+
+                await _userManager.AddToRoleAsync(user, roleName);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+            
         }
     }
 }

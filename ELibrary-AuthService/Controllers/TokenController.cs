@@ -37,7 +37,7 @@ public class TokenController : Controller
         }
         else
         {
-            return BadRequest();
+            return BadRequest("Wrong crendentials");
         }
     }
 

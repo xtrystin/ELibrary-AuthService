@@ -4,6 +4,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using ELibrary_AuthService.Data;
+using MassTransit;
+using ELibrary_AuthService.RabbitMq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +58,9 @@ builder.Services.AddSwaggerGen(c => {
         }
     });
 });
+
+var rabbitMqOptions = builder.Configuration.GetSection(nameof(RabbitMqOptions)).Get<RabbitMqOptions>();
+builder.Services.AddRabbitMq(rabbitMqOptions);
 
 //todo: move to Extension method  AddJwtAuth()
 builder.Services.AddAuthentication(options =>
