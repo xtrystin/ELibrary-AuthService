@@ -65,7 +65,7 @@ namespace ELibrary_AuthService.Controllers
                     if (existingUser is null)
                         return BadRequest();
 
-                    var message = new UserCreated() { UserId = new Guid(existingUser.Id),
+                    var message = new UserCreated() { UserId = existingUser.Id,
                         FirstName = user.FirstName, LastName = user.LastName };
                     
                     //await _bus.Publish(message);    // todo: uncomment when rabbit is ready
@@ -171,6 +171,23 @@ namespace ELibrary_AuthService.Controllers
                 throw;
             }
             
+        }
+
+        [HttpDelete]
+        [Route("{userId}")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> Delete(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user is null)
+                return NotFound();
+
+            await _userManager.DeleteAsync(user);
+
+            var message = new UserDeleted() { UserId = userId };
+            //_bus.Publish(message);   // todo: uncomment when rabbit is ready
+
+            return NoContent();
         }
     }
 }
