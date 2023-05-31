@@ -1,9 +1,10 @@
 ﻿using ELibrary_AuthService.Data;
+using ELibrary_AuthService.ServiceBus;
 using MassTransit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using RabbitMqMessages;
+using ServiceBusMessages;
 using System.Text;
 
 namespace ELibrary_AuthService.Controllers
@@ -17,17 +18,17 @@ namespace ELibrary_AuthService.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ILogger<UserController> _logger;
-        private readonly IBus _bus;
+        private readonly IMessagePublisher _messagePublisher;
 
         public UserController(ApplicationDbContext context,
             UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager,
-            ILogger<UserController> logger, IBus bus)
+            ILogger<UserController> logger, IMessagePublisher messagePublisher)
         {
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
             _logger = logger;
-            _bus = bus;
+            _messagePublisher = messagePublisher;
         }
 
         public record UserRegistrationModel(
@@ -68,7 +69,7 @@ namespace ELibrary_AuthService.Controllers
                     var message = new UserCreated() { UserId = existingUser.Id,
                         FirstName = user.FirstName, LastName = user.LastName };
                     
-                    //await _bus.Publish(message);    // todo: uncomment when rabbit is ready
+                    await _messagePublisher.Publish(message);
                     return Ok();
                 }
                 else
@@ -185,7 +186,7 @@ namespace ELibrary_AuthService.Controllers
             await _userManager.DeleteAsync(user);
 
             var message = new UserDeleted() { UserId = userId };
-            //_bus.Publish(message);   // todo: uncomment when rabbit is ready
+            _messagePublisher.Publish(message);
 
             return NoContent();
         }

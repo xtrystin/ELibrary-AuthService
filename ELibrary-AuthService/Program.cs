@@ -6,6 +6,7 @@ using System.Text;
 using ELibrary_AuthService.Data;
 using MassTransit;
 using ELibrary_AuthService.RabbitMq;
+using ELibrary_AuthService.ServiceBus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,8 +60,8 @@ builder.Services.AddSwaggerGen(c => {
     });
 });
 
-var rabbitMqOptions = builder.Configuration.GetSection(nameof(RabbitMqOptions)).Get<RabbitMqOptions>();
-builder.Services.AddRabbitMq(rabbitMqOptions);
+builder.Services.AddServiceBus(builder.Configuration);
+builder.Services.AddScoped<IMessagePublisher, MessagePublisher>();
 
 //todo: move to Extension method  AddJwtAuth()
 builder.Services.AddAuthentication(options =>

@@ -1,4 +1,4 @@
-﻿namespace RabbitMqMessages;
+﻿namespace ServiceBusMessages;
 
 public class UserDeleted
 {
