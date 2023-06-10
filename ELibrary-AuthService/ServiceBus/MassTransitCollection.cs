@@ -34,14 +34,14 @@ public static class MassTransitCollection
                     // UserCreated
                     EndpointConvention.Map<UserCreatedU>(new Uri($"queue:{nameof(UserCreatedU)}"));
                     cfg.Message<UserCreatedU>(cfgTopology => cfgTopology.SetEntityName(nameof(UserCreatedU)));
-                    EndpointConvention.Map<UserCreatedB>(new Uri($"queue:{nameof(UserCreatedB)}"));
-                    cfg.Message<UserCreatedB>(cfgTopology => cfgTopology.SetEntityName(nameof(UserCreatedB)));
+                    EndpointConvention.Map<UserCreatedBr>(new Uri($"queue:{nameof(UserCreatedBr)}"));
+                    cfg.Message<UserCreatedBr>(cfgTopology => cfgTopology.SetEntityName(nameof(UserCreatedBr)));
 
                     // UserDeleted
                     EndpointConvention.Map<UserDeletedU>(new Uri($"queue:{nameof(UserDeletedU)}"));
                     cfg.Message<UserDeletedU>(cfgTopology => cfgTopology.SetEntityName(nameof(UserDeletedU)));
-                    EndpointConvention.Map<UserDeletedB>(new Uri($"queue:{nameof(UserDeletedB)}"));
-                    cfg.Message<UserDeletedB>(cfgTopology => cfgTopology.SetEntityName(nameof(UserDeletedB)));
+                    EndpointConvention.Map<UserDeletedBr>(new Uri($"queue:{nameof(UserDeletedBr)}"));
+                    cfg.Message<UserDeletedBr>(cfgTopology => cfgTopology.SetEntityName(nameof(UserDeletedBr)));
                 });
             }
 
