@@ -4,6 +4,10 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using ELibrary_AuthService.Data;
+using MassTransit;
+using ELibrary_AuthService.RabbitMq;
+using ELibrary_AuthService.ServiceBus;
+
 using Prometheus;
 
 // Start the metrics server on your preferred port number.
@@ -14,7 +18,6 @@ server.Start();
 // var recordsProcessed = Metrics.CreateCounter("sample_records_processed_total", "Total number of records processed.");
 
 //         recordsProcessed.Inc();
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -66,6 +69,9 @@ builder.Services.AddSwaggerGen(c => {
         }
     });
 });
+
+builder.Services.AddServiceBus(builder.Configuration);
+builder.Services.AddScoped<IMessagePublisher, MessagePublisher>();
 
 //todo: move to Extension method  AddJwtAuth()
 builder.Services.AddAuthentication(options =>
