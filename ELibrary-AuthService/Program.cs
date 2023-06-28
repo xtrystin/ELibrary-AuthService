@@ -7,19 +7,12 @@ using ELibrary_AuthService.Data;
 using MassTransit;
 using ELibrary_AuthService.RabbitMq;
 using ELibrary_AuthService.ServiceBus;
-
 using Prometheus;
 
-// Start the metrics server on your preferred port number.
 using var server = new KestrelMetricServer(port: 1234);
 server.Start();
 
-// Generate some sample data from fake business logic.
-// var recordsProcessed = Metrics.CreateCounter("sample_records_processed_total", "Total number of records processed.");
-
-//         recordsProcessed.Inc();
 var builder = WebApplication.CreateBuilder(args);
-
 // Add services to the container.
 builder.Services.AddCors(policy =>
 {
@@ -112,6 +105,9 @@ else
     app.UseHsts();
 }
 
+app.UseMetricServer();
+app.UseHttpMetrics(options => options.AddCustomLabel("host", context => context.Request.Host.Host));
+
 app.UseHttpsRedirection();
 app.UseCors("OpenCorsPolicy");
 app.UseStaticFiles();
@@ -125,8 +121,5 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
-
-app.UseMetricServer();
-app.UseHttpMetrics(options => options.AddCustomLabel("host", context => context.Request.Host.Host));
 
 app.Run();
